@@ -1,0 +1,48 @@
+name: garmin-sync
+
+# Pulls Garmin Connect activities + daily wellness every morning and writes
+# them to Supabase, which the dashboard in docs/ reads from.
+#
+# Auth: the session token is seeded once locally (`python sync_garmin.py --login`
+# + `--export-ci-token`) and stored as the GARMIN_TOKEN_B64 secret below. CI
+# restores it and the library refreshes it silently on each run. Re-seed only
+# if the refresh token expires (about once a year) or the password changes.
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC every morning
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Days back to pull"
+        required: false
+        default: "3"
+
+concurrency:
+  group: garmin-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r scripts/garmin/requirements.txt
+
+      - name: Restore Garmin session token
+        env:
+          GARMIN_TOKEN_B64: ${{ secrets.GARMIN_TOKEN_B64 }}
+        run: |
+          echo "$GARMIN_TOKEN_B64" | base64 -d | tar -xzf - -C scripts/garmin
+
+      - name: Run Garmin sync
+        run: python scripts/garmin/sync_garmin.py --days ${{ github.event.inputs.days || '3' }} --sink supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

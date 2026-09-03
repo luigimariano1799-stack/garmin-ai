@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garmin Dashboard</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --card-bg: #ffffff;
+    --text: #1b1b18;
+    --muted: #6b6b64;
+    --border: #e6e4de;
+    --accent: #2f6f4f;
+    --accent-2: #b5533c;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 8px rgba(0,0,0,0.03);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16171a;
+      --card-bg: #1f2023;
+      --text: #ebeae6;
+      --muted: #9a9a92;
+      --border: #2c2d31;
+      --accent: #6fbf94;
+      --accent-2: #e08a6d;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 8px rgba(0,0,0,0.25);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .card .value { font-size: 1.6rem; font-weight: 600; margin-top: 4px; }
+  .card .unit { font-size: 0.85rem; color: var(--muted); font-weight: 400; margin-left: 3px; }
+  section { margin-bottom: 32px; }
+  h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .chart-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+  }
+  .chart-title { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .activity-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow);
+  }
+  .activity-row .name { font-weight: 600; }
+  .activity-row .meta { color: var(--muted); font-size: 0.85rem; }
+  .empty, .error { color: var(--muted); font-size: 0.9rem; padding: 12px 0; }
+  .error { color: var(--accent-2); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Garmin Dashboard</h1>
+    <div class="subtitle" id="subtitle">Caricamento...</div>
+
+    <div class="grid" id="today-cards"></div>
+
+    <section>
+      <h2>Ultimi 14 giorni</h2>
+      <div class="chart-card"><div class="chart-title">Frequenza cardiaca a riposo (bpm)</div><svg id="chart-rhr" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
+      <div class="chart-card"><div class="chart-title">HRV notturna (ms)</div><svg id="chart-hrv" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
+      <div class="chart-card"><div class="chart-title">Sonno (ore)</div><svg id="chart-sleep" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
+      <div class="chart-card"><div class="chart-title">Training readiness</div><svg id="chart-tr" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
+    </section>
+
+    <section>
+      <h2>Attività recenti</h2>
+      <div id="activities"></div>
+    </section>
+  </div>
+
+<script>
+const SUPABASE_URL = "https://puvnrwclntipvqojsnul.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_XWKDH2KvC-gglM0bNAKrDw_bGOqtJeF";
+
+async function sb(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+  });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+function fmt(value, digits = 0) {
+  return value === null || value === undefined ? "—" : Number(value).toFixed(digits);
+}
+
+function renderCards(today, yesterday) {
+  const container = document.getElementById("today-cards");
+  if (!today) {
+    container.innerHTML = '<div class="empty">Nessun dato di oggi ancora. Attendi la prossima sincronizzazione.</div>';
+    return;
+  }
+  const fields = [
+    ["Rest HR", today.resting_hr, "bpm"],
+    ["HRV", today.hrv_ms, "ms"],
+    ["Sonno", today.sleep_hours, "h"],
+    ["Body battery", today.body_battery_low != null && today.body_battery_high != null ? `${today.body_battery_low}→${today.body_battery_high}` : null, ""],
+    ["Stress", today.stress_avg, ""],
+    ["Passi", today.steps, ""],
+    ["Readiness", today.training_readiness, ""],
+  ];
+  container.innerHTML = fields.map(([label, value, unit]) => `
+    <div class="card">
+      <div class="label">${label}</div>
+      <div class="value">${value === null || value === undefined ? "—" : value}<span class="unit">${unit}</span></div>
+    </div>
+  `).join("");
+}
+
+function drawLineChart(svgId, points, opts = {}) {
+  const svg = document.getElementById(svgId);
+  const values = points.map(p => p.v).filter(v => v !== null && v !== undefined);
+  if (values.length === 0) {
+    svg.innerHTML = '<text x="10" y="60" font-size="12" fill="currentColor" opacity="0.5">Nessun dato</text>';
+    return;
+  }
+  const w = 600, h = 120, pad = 10;
+  const min = opts.min !== undefined ? opts.min : Math.min(...values);
+  const max = opts.max !== undefined ? opts.max : Math.max(...values);
+  const range = max - min || 1;
+  const stepX = (w - pad * 2) / Math.max(points.length - 1, 1);
+
+  const coords = points.map((p, i) => {
+    const x = pad + i * stepX;
+    const y = p.v === null || p.v === undefined
+      ? null
+      : h - pad - ((p.v - min) / range) * (h - pad * 2);
+    return { x, y, v: p.v, label: p.label };
+  });
+
+  const segments = [];
+  let path = "";
+  coords.forEach((c, i) => {
+    if (c.y === null) { path = ""; return; }
+    path += (path === "" ? `M${c.x},${c.y}` : ` L${c.x},${c.y}`);
+    if (i === coords.length - 1 || coords[i + 1].y === null) segments.push(path);
+  });
+
+  const dots = coords.filter(c => c.y !== null).map(c =>
+    `<circle cx="${c.x}" cy="${c.y}" r="2.5" fill="var(--accent)"><title>${c.label}: ${c.v}</title></circle>`
+  ).join("");
+
+  svg.innerHTML = segments.map(seg =>
+    `<path d="${seg}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+  ).join("") + dots;
+}
+
+function renderActivities(activities) {
+  const container = document.getElementById("activities");
+  if (!activities.length) {
+    container.innerHTML = '<div class="empty">Nessuna attività recente.</div>';
+    return;
+  }
+  container.innerHTML = activities.map(a => {
+    const date = a.start_time ? new Date(a.start_time).toLocaleDateString("it-IT", { day: "2-digit", month: "short" }) : "";
+    const dist = a.distance_m ? `${(a.distance_m / 1000).toFixed(2)} km` : "";
+    const dur = a.duration_s ? `${Math.round(a.duration_s / 60)} min` : "";
+    const hr = a.avg_hr ? `${a.avg_hr} bpm avg` : "";
+    const meta = [dist, dur, hr].filter(Boolean).join(" · ");
+    return `
+      <div class="activity-row">
+        <div>
+          <div class="name">${a.name || a.activity_type || "Attività"}</div>
+          <div class="meta">${meta}</div>
+        </div>
+        <div class="meta">${date}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function main() {
+  const subtitle = document.getElementById("subtitle");
+  try {
+    const [wellness, activities] = await Promise.all([
+      sb("garmin_wellness?select=*&order=date.desc&limit=14"),
+      sb("garmin_activities?select=*&order=start_time.desc&limit=8"),
+    ]);
+
+    const sorted = [...wellness].sort((a, b) => a.date.localeCompare(b.date));
+    const today = wellness[0] || null;
+    const yesterday = wellness[1] || null;
+
+    subtitle.textContent = today
+      ? `Aggiornato al ${new Date(today.date).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" })}`
+      : "In attesa dei primi dati";
+
+    renderCards(today, yesterday);
+
+    drawLineChart("chart-rhr", sorted.map(d => ({ v: d.resting_hr, label: d.date })));
+    drawLineChart("chart-hrv", sorted.map(d => ({ v: d.hrv_ms, label: d.date })));
+    drawLineChart("chart-sleep", sorted.map(d => ({ v: d.sleep_hours, label: d.date })), { min: 0 });
+    drawLineChart("chart-tr", sorted.map(d => ({ v: d.training_readiness, label: d.date })), { min: 0, max: 100 });
+
+    renderActivities(activities);
+  } catch (err) {
+    subtitle.innerHTML = `<span class="error">Errore nel caricamento dei dati: ${err.message}</span>`;
+  }
+}
+
+main();
+</script>
+</body>
+</html>

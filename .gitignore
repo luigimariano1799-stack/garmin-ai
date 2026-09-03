@@ -1,0 +1,11 @@
+.garmin_tokens/
+**/.garmin_tokens/
+garmin-ci-token.txt
+**/garmin-ci-token.txt
+/garmin/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+supabase_schema.sql
+.env
