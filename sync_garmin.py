@@ -37,6 +37,7 @@ import os
 import re
 import sys
 import tarfile
+import time
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -175,6 +176,10 @@ def fmt_km(meters) -> str | None:
     return f"{meters / 1000:.2f} km"
 
 
+def secs_to_min(value):
+    return round(value / 60, 1) if value is not None else None
+
+
 def slugify(text: str) -> str:
     text = re.sub(r"[^a-zA-Z0-9]+", "-", text or "activity").strip("-").lower()
     return text or "activity"
@@ -231,6 +236,24 @@ def collect_wellness(garmin: Garmin, day: date) -> dict:
         "stress_avg": first_of(summary, "averageStressLevel"),
         "steps": first_of(summary, "totalSteps"),
         "training_readiness": readiness_score,
+        # Extra detail, all pulled from calls already made above.
+        "max_hr": as_int(first_of(summary, "maxHeartRate")),
+        "calories_total": as_int(first_of(summary, "totalKilocalories")),
+        "calories_active": as_int(first_of(summary, "activeKilocalories")),
+        "floors_climbed": as_int(first_of(summary, "floorsAscended")),
+        "intensity_minutes_moderate": as_int(first_of(summary, "moderateIntensityMinutes")),
+        "intensity_minutes_vigorous": as_int(first_of(summary, "vigorousIntensityMinutes")),
+        "spo2_avg": first_of(summary, "averageSpo2"),
+        "respiration_avg": first_of(summary, "avgWakingRespirationValue"),
+        "stress_high_min": secs_to_min(first_of(summary, "highStressDuration")),
+        "stress_low_min": secs_to_min(first_of(summary, "lowStressDuration")),
+        "body_battery_charged": as_int(first_of(summary, "bodyBatteryChargedValue")),
+        "body_battery_drained": as_int(first_of(summary, "bodyBatteryDrainedValue")),
+        "sleep_deep_min": secs_to_min(first_of(sleep_summary, "deepSleepSeconds")),
+        "sleep_light_min": secs_to_min(first_of(sleep_summary, "lightSleepSeconds")),
+        "sleep_rem_min": secs_to_min(first_of(sleep_summary, "remSleepSeconds")),
+        "sleep_awake_min": secs_to_min(first_of(sleep_summary, "awakeSleepSeconds")),
+        "sleep_avg_hr": as_int(first_of(sleep_summary, "avgHeartRate")),
     }
 
 
@@ -257,6 +280,24 @@ def render_daily_md(w: dict) -> str:
         lines.append(f"- Steps: {w['steps']}")
     if w.get("training_readiness") is not None:
         lines.append(f"- Training readiness: {w['training_readiness']}")
+    if w.get("sleep_deep_min") is not None:
+        lines.append(
+            f"- Sleep stages: deep {w.get('sleep_deep_min')}m, light {w.get('sleep_light_min')}m, "
+            f"REM {w.get('sleep_rem_min')}m, awake {w.get('sleep_awake_min')}m"
+        )
+    if w.get("calories_total") is not None:
+        lines.append(f"- Calories: {round(w['calories_total'])} total ({round(w.get('calories_active') or 0)} active)")
+    if w.get("floors_climbed") is not None:
+        lines.append(f"- Floors climbed: {w['floors_climbed']}")
+    if w.get("intensity_minutes_moderate") is not None:
+        lines.append(
+            f"- Intensity minutes: {w.get('intensity_minutes_moderate', 0)} moderate, "
+            f"{w.get('intensity_minutes_vigorous', 0)} vigorous"
+        )
+    if w.get("spo2_avg") is not None:
+        lines.append(f"- SpO2 (avg): {w['spo2_avg']}%")
+    if w.get("respiration_avg") is not None:
+        lines.append(f"- Respiration (avg): {w['respiration_avg']} brpm")
     if len(lines) == 2:
         lines.append("- No wellness data recorded for this day (watch not worn?)")
     return "\n".join(lines) + "\n"
@@ -284,6 +325,16 @@ def render_activity_md(a: dict) -> str:
         lines.append(f"- Elevation gain: {a['elevationGain']} m")
     if a.get("averageSpeed") and dist and dur:
         lines.append(f"- Avg pace/speed: {a['averageSpeed']:.2f} m/s")
+    if a.get("locationName"):
+        lines.append(f"- Location: {a['locationName']}")
+    if a.get("trainingEffectLabel"):
+        lines.append(f"- Training effect: {a['trainingEffectLabel']}")
+    if a.get("aerobicTrainingEffect") is not None:
+        lines.append(
+            f"- Aerobic/anaerobic effect: {a.get('aerobicTrainingEffect')} / {a.get('anaerobicTrainingEffect')}"
+        )
+    if a.get("activityTrainingLoad") is not None:
+        lines.append(f"- Training load: {a['activityTrainingLoad']}")
 
     return "\n".join(lines) + "\n"
 
@@ -342,6 +393,21 @@ def map_activity_row(a: dict) -> dict:
         "max_hr": as_int(a.get("maxHR")),
         "calories": as_int(a.get("calories")),
         "elevation_gain_m": a.get("elevationGain"),
+        "training_effect_aerobic": a.get("aerobicTrainingEffect"),
+        "training_effect_anaerobic": a.get("anaerobicTrainingEffect"),
+        "training_effect_label": a.get("trainingEffectLabel"),
+        "training_load": a.get("activityTrainingLoad"),
+        "avg_speed_mps": a.get("averageSpeed"),
+        "max_speed_mps": a.get("maxSpeed"),
+        "elevation_loss_m": a.get("elevationLoss"),
+        "max_elevation_m": a.get("maxElevation"),
+        "min_elevation_m": a.get("minElevation"),
+        "location_name": a.get("locationName"),
+        "hr_zone1_min": secs_to_min(a.get("hrTimeInZone_1")),
+        "hr_zone2_min": secs_to_min(a.get("hrTimeInZone_2")),
+        "hr_zone3_min": secs_to_min(a.get("hrTimeInZone_3")),
+        "hr_zone4_min": secs_to_min(a.get("hrTimeInZone_4")),
+        "hr_zone5_min": secs_to_min(a.get("hrTimeInZone_5")),
     }
 
 
@@ -410,6 +476,12 @@ def main() -> None:
         help="Where to send the data (default: files).",
     )
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="Output folder for --sink files.")
+    parser.add_argument(
+        "--pace",
+        type=float,
+        default=0.3,
+        help="Seconds to wait between each day's requests, to be gentle on Garmin's servers (default 0.3).",
+    )
     args = parser.parse_args()
 
     if args.login:
@@ -433,6 +505,10 @@ def main() -> None:
     for i in range(args.days):
         day = start + timedelta(days=i)
         wellness.append(collect_wellness(garmin, day))
+        if args.days > 10 and (i + 1) % 20 == 0:
+            print(f"  ...{i + 1}/{args.days} days pulled")
+        if args.pace:
+            time.sleep(args.pace)
 
     if args.dry_run:
         print(f"\nFound {len(activities)} activit(y/ies):")

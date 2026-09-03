@@ -6,238 +6,900 @@
 <title>Garmin Dashboard</title>
 <style>
   :root {
-    --bg: #f7f7f5;
-    --card-bg: #ffffff;
-    --text: #1b1b18;
-    --muted: #6b6b64;
-    --border: #e6e4de;
-    --accent: #2f6f4f;
-    --accent-2: #b5533c;
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --surface-2: #ffffff;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
     --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 8px rgba(0,0,0,0.03);
+
+    --s1: #2a78d6; /* blue */
+    --s2: #eb6834; /* orange */
+    --s3: #1baf7a; /* aqua */
+    --s4: #eda100; /* yellow */
+    --s5: #e87ba4; /* magenta */
+    --s6: #008300; /* green */
+    --s7: #4a3aa7; /* violet */
+    --s8: #e34948; /* red */
+
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #16171a;
-      --card-bg: #1f2023;
-      --text: #ebeae6;
-      --muted: #9a9a92;
-      --border: #2c2d31;
-      --accent: #6fbf94;
-      --accent-2: #e08a6d;
-      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 8px rgba(0,0,0,0.25);
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --surface-2: #201f1e;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
     }
   }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --surface-2: #201f1e; --page: #0d0d0d;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  }
+
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding: 24px 16px 64px;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 20px 16px 72px;
   }
-  .wrap { max-width: 880px; margin: 0 auto; }
-  h1 { font-size: 1.4rem; margin: 0 0 4px; }
-  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    margin-bottom: 28px;
+  .wrap { max-width: 1040px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  h1 { font-size: 1.35rem; margin: 0; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; }
+
+  .filters {
+    display: flex;
+    gap: 6px;
+    margin: 16px 0 22px;
+    flex-wrap: wrap;
   }
+  .filters button {
+    font: inherit;
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .filters button.active {
+    background: var(--s1);
+    border-color: var(--s1);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 28px; }
   .card {
-    background: var(--card-bg);
+    background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     box-shadow: var(--shadow);
   }
-  .card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
-  .card .value { font-size: 1.6rem; font-weight: 600; margin-top: 4px; }
-  .card .unit { font-size: 0.85rem; color: var(--muted); font-weight: 400; margin-left: 3px; }
-  section { margin-bottom: 32px; }
-  h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .card .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .card .value { font-size: 1.45rem; font-weight: 650; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .card .unit { font-size: 0.78rem; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .card .delta { font-size: 0.75rem; margin-top: 3px; color: var(--muted); }
+  .card .delta.good { color: var(--good); }
+
+  section { margin-bottom: 30px; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  h2 { font-size: 0.92rem; color: var(--text-secondary); font-weight: 650; margin: 0; text-transform: uppercase; letter-spacing: 0.03em; }
+  .toggle-table {
+    font-size: 0.75rem;
+    color: var(--s1);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 700px) { .chart-row { grid-template-columns: 1fr; } }
+
   .chart-card {
-    background: var(--card-bg);
+    background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 16px;
+    padding: 14px 16px 10px;
     box-shadow: var(--shadow);
     margin-bottom: 12px;
+    position: relative;
   }
-  .chart-title { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
-  svg { display: block; width: 100%; height: auto; overflow: visible; }
-  .activity-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 12px 16px;
-    background: var(--card-bg);
+  .chart-title { font-size: 0.82rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px; }
+  .chart-sub { font-size: 0.72rem; color: var(--muted); margin-bottom: 8px; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-secondary); margin-top: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+  .legend i.dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: none; cursor: crosshair; }
+  .grid-line { stroke: var(--grid); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1; }
+  .axis-label { fill: var(--muted); font-size: 9px; font-family: system-ui, sans-serif; }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 0.74rem;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transition: opacity 0.1s;
+    white-space: nowrap;
+    z-index: 5;
+    color: var(--text-primary);
+  }
+  .tooltip .t-date { color: var(--muted); font-size: 0.68rem; margin-bottom: 3px; }
+  .tooltip .t-row { display: flex; align-items: center; gap: 6px; }
+  .tooltip .t-row + .t-row { margin-top: 2px; }
+  .tooltip .t-key { width: 9px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+  .tooltip .t-val { font-weight: 650; font-variant-numeric: tabular-nums; }
+  .tooltip .t-name { color: var(--text-secondary); }
+
+  .data-table { display: none; margin-top: 10px; overflow-x: auto; }
+  .data-table.open { display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.02em; cursor: pointer; user-select: none; }
+  th:hover { color: var(--text-primary); }
+  tbody tr:hover { background: var(--page); }
+
+  .controls-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .controls-row input, .controls-row select {
+    font: inherit;
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-primary);
+  }
+  .controls-row input { flex: 1; min-width: 140px; }
+
+  .activity-card {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: 12px;
     margin-bottom: 8px;
     box-shadow: var(--shadow);
   }
-  .activity-row .name { font-weight: 600; }
-  .activity-row .meta { color: var(--muted); font-size: 0.85rem; }
-  .empty, .error { color: var(--muted); font-size: 0.9rem; padding: 12px 0; }
-  .error { color: var(--accent-2); }
+  .activity-card .name { font-weight: 650; font-size: 0.92rem; }
+  .activity-card .meta { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+  .badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 650;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--page);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .activity-card .date { color: var(--muted); font-size: 0.78rem; text-align: right; white-space: nowrap; }
+
+  .empty, .error { color: var(--muted); font-size: 0.85rem; padding: 14px 0; }
+  .error { color: var(--critical); }
+  footer { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 40px; }
+  a { color: var(--s1); }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Garmin Dashboard</h1>
-    <div class="subtitle" id="subtitle">Caricamento...</div>
+    <header>
+      <h1>Garmin Dashboard</h1>
+      <div class="subtitle" id="subtitle">Caricamento...</div>
+    </header>
+
+    <div class="filters" id="filters"></div>
 
     <div class="grid" id="today-cards"></div>
 
     <section>
-      <h2>Ultimi 14 giorni</h2>
-      <div class="chart-card"><div class="chart-title">Frequenza cardiaca a riposo (bpm)</div><svg id="chart-rhr" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
-      <div class="chart-card"><div class="chart-title">HRV notturna (ms)</div><svg id="chart-hrv" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
-      <div class="chart-card"><div class="chart-title">Sonno (ore)</div><svg id="chart-sleep" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
-      <div class="chart-card"><div class="chart-title">Training readiness</div><svg id="chart-tr" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
+      <div class="section-head"><h2>Cuore &amp; recupero</h2></div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="chart-title">Frequenza cardiaca a riposo</div><div class="chart-sub">bpm, al risveglio</div><div class="chart-host" id="c-rhr"></div></div>
+        <div class="chart-card"><div class="chart-title">HRV notturna</div><div class="chart-sub">millisecondi</div><div class="chart-host" id="c-hrv"></div></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="chart-title">Training readiness</div><div class="chart-sub">0-100, quanto il corpo è pronto ad allenarsi</div><div class="chart-host" id="c-tr"></div></div>
+        <div class="chart-card"><div class="chart-title">Body battery</div><div class="chart-sub">range giornaliero minimo-massimo</div><div class="chart-host" id="c-bb"></div></div>
+      </div>
     </section>
 
     <section>
-      <h2>Attività recenti</h2>
-      <div id="activities"></div>
+      <div class="section-head">
+        <h2>Sonno</h2>
+        <button class="toggle-table" data-target="table-sleep">mostra tabella</button>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="chart-title">Fasi del sonno</div><div class="chart-sub">minuti per notte</div><div class="chart-host" id="c-sleep"></div>
+          <div class="legend">
+            <span><i style="background:var(--s7)"></i>Profondo</span>
+            <span><i style="background:var(--s1)"></i>Leggero</span>
+            <span><i style="background:var(--s3)"></i>REM</span>
+            <span><i style="background:var(--muted)"></i>Sveglio</span>
+          </div>
+        </div>
+        <div class="chart-card"><div class="chart-title">Punteggio sonno</div><div class="chart-sub">0-100</div><div class="chart-host" id="c-sleepscore"></div></div>
+      </div>
+      <div class="data-table" id="table-sleep"></div>
     </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Stress &amp; energia</h2>
+        <button class="toggle-table" data-target="table-stress">mostra tabella</button>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="chart-title">Stress medio</div><div class="chart-sub">0-100</div><div class="chart-host" id="c-stress"></div></div>
+        <div class="chart-card"><div class="chart-title">Minuti di stress per livello</div><div class="chart-sub">minuti/giorno</div><div class="chart-host" id="c-stressmin"></div>
+          <div class="legend">
+            <span><i style="background:var(--s3)"></i>Basso</span>
+            <span><i style="background:var(--s4)"></i>Alto</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="chart-title">Passi</div><div class="chart-sub">al giorno</div><div class="chart-host" id="c-steps"></div></div>
+        <div class="chart-card"><div class="chart-title">Calorie</div><div class="chart-sub">totali vs attive, kcal</div><div class="chart-host" id="c-cal"></div>
+          <div class="legend">
+            <span><i style="background:var(--s2)"></i>Attive</span>
+            <span><i style="background:var(--muted)"></i>Base</span>
+          </div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><div class="chart-title">SpO2 media</div><div class="chart-sub">% saturazione ossigeno</div><div class="chart-host" id="c-spo2"></div></div>
+        <div class="chart-card"><div class="chart-title">Respirazione media</div><div class="chart-sub">atti/min</div><div class="chart-host" id="c-resp"></div></div>
+      </div>
+      <div class="data-table" id="table-stress"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Attività recenti</h2>
+        <button class="toggle-table" data-target="table-activities">mostra tabella</button>
+      </div>
+      <div class="controls-row">
+        <input type="text" id="activity-search" placeholder="Cerca per nome o luogo...">
+        <select id="activity-type-filter"><option value="">Tutti i tipi</option></select>
+      </div>
+      <div id="activities"></div>
+      <div class="data-table" id="table-activities"></div>
+    </section>
+
+    <footer>Aggiornato automaticamente ogni mattina · dati letti in sola lettura da Garmin Connect</footer>
   </div>
+  <div class="tooltip" id="tooltip"></div>
 
 <script>
 const SUPABASE_URL = "https://puvnrwclntipvqojsnul.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_XWKDH2KvC-gglM0bNAKrDw_bGOqtJeF";
 
+const RANGES = [
+  { label: "7g", days: 7 },
+  { label: "14g", days: 14 },
+  { label: "30g", days: 30 },
+  { label: "90g", days: 90 },
+  { label: "1a", days: 365 },
+  { label: "Tutto", days: 3650 },
+];
+let currentDays = 30;
+
+const tooltipEl = document.getElementById("tooltip");
+
 async function sb(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
   });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();
 }
 
-function fmt(value, digits = 0) {
-  return value === null || value === undefined ? "—" : Number(value).toFixed(digits);
+function fmtDate(iso, opts = { day: "2-digit", month: "short" }) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("it-IT", opts);
 }
+
+function num(v, digits = 0) {
+  return v === null || v === undefined ? null : Number(v.toFixed(digits));
+}
+
+// ---------------------------------------------------------------------
+// Generic line chart with crosshair tooltip. `series` = [{key,label,color,points:[{x,label,v}]}]
+// ---------------------------------------------------------------------
+function LineChart(host, series, opts = {}) {
+  const w = 480, h = 130, padL = 34, padR = 8, padT = 8, padB = 18;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+  host.innerHTML = "";
+  host.appendChild(svg);
+
+  const allVals = series.flatMap(s => s.points.map(p => p.v)).filter(v => v !== null && v !== undefined);
+  if (!allVals.length) {
+    host.innerHTML = '<div class="empty">Nessun dato in questo periodo</div>';
+    return;
+  }
+  const min = opts.min !== undefined ? opts.min : Math.min(...allVals);
+  const max = opts.max !== undefined ? opts.max : Math.max(...allVals);
+  const range = (max - min) || 1;
+  const n = series[0].points.length;
+  const stepX = n > 1 ? (w - padL - padR) / (n - 1) : 0;
+
+  const xAt = i => padL + i * stepX;
+  const yAt = v => h - padB - ((v - min) / range) * (h - padT - padB);
+
+  // gridlines (3)
+  for (let g = 0; g <= 2; g++) {
+    const gv = min + (range * g) / 2;
+    const gy = yAt(gv);
+    const line = document.createElementNS(svg.namespaceURI, "line");
+    line.setAttribute("x1", padL); line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", gy); line.setAttribute("y2", gy);
+    line.setAttribute("class", "grid-line");
+    svg.appendChild(line);
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", 2); label.setAttribute("y", gy + 3);
+    label.setAttribute("class", "axis-label");
+    label.textContent = Math.round(gv);
+    svg.appendChild(label);
+  }
+
+  // x labels: first, mid, last
+  [0, Math.floor((n - 1) / 2), n - 1].forEach(i => {
+    if (i < 0 || i >= n) return;
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", xAt(i)); label.setAttribute("y", h - 4);
+    label.setAttribute("class", "axis-label");
+    label.setAttribute("text-anchor", i === 0 ? "start" : i === n - 1 ? "end" : "middle");
+    label.textContent = fmtDate(series[0].points[i].label);
+    svg.appendChild(label);
+  });
+
+  series.forEach(s => {
+    let path = "";
+    s.points.forEach((p, i) => {
+      if (p.v === null || p.v === undefined) { path += "|"; return; }
+      const seg = `${xAt(i)},${yAt(p.v)}`;
+      path += path === "" || path.endsWith("|") ? `M${seg}` : ` L${seg}`;
+    });
+    path.split("|").forEach(seg => {
+      if (!seg) return;
+      const el = document.createElementNS(svg.namespaceURI, "path");
+      el.setAttribute("d", seg);
+      el.setAttribute("fill", "none");
+      el.setAttribute("stroke", s.color);
+      el.setAttribute("stroke-width", "2");
+      el.setAttribute("stroke-linecap", "round");
+      el.setAttribute("stroke-linejoin", "round");
+      svg.appendChild(el);
+    });
+  });
+
+  // crosshair
+  const cross = document.createElementNS(svg.namespaceURI, "line");
+  cross.setAttribute("y1", padT); cross.setAttribute("y2", h - padB);
+  cross.setAttribute("stroke", "var(--baseline)");
+  cross.setAttribute("stroke-width", "1");
+  cross.style.opacity = 0;
+  svg.appendChild(cross);
+
+  const dots = series.map(s => {
+    const c = document.createElementNS(svg.namespaceURI, "circle");
+    c.setAttribute("r", "3");
+    c.setAttribute("fill", s.color);
+    c.style.opacity = 0;
+    svg.appendChild(c);
+    return c;
+  });
+
+  function showAt(clientX, rect) {
+    const relX = clientX - rect.left;
+    const frac = (relX / rect.width) * (w - padL - padR);
+    let idx = Math.round(frac / (stepX || 1));
+    idx = Math.max(0, Math.min(n - 1, idx));
+    const cx = xAt(idx);
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx);
+    cross.style.opacity = 1;
+
+    let rows = "";
+    series.forEach((s, si) => {
+      const p = s.points[idx];
+      if (p && p.v !== null && p.v !== undefined) {
+        dots[si].setAttribute("cx", cx);
+        dots[si].setAttribute("cy", yAt(p.v));
+        dots[si].style.opacity = 1;
+        rows += `<div class="t-row"><span class="t-key" style="background:${s.color}"></span><span class="t-name">${s.label}</span>&nbsp;<span class="t-val">${p.v}${opts.unit || ""}</span></div>`;
+      } else {
+        dots[si].style.opacity = 0;
+      }
+    });
+    tooltipEl.innerHTML = `<div class="t-date">${fmtDate(series[0].points[idx].label, { day: "2-digit", month: "long", year: "numeric" })}</div>${rows}`;
+    tooltipEl.style.opacity = 1;
+    const hostRect = host.getBoundingClientRect();
+    let left = cx / w * hostRect.width;
+    tooltipEl.style.left = `${hostRect.left + window.scrollX + Math.min(Math.max(left, 60), hostRect.width - 60)}px`;
+    tooltipEl.style.top = `${hostRect.top + window.scrollY - 8}px`;
+    tooltipEl.style.transform = "translate(-50%, -100%)";
+  }
+
+  function hide() {
+    cross.style.opacity = 0;
+    dots.forEach(d => d.style.opacity = 0);
+    tooltipEl.style.opacity = 0;
+  }
+
+  svg.addEventListener("pointermove", e => showAt(e.clientX, svg.getBoundingClientRect()));
+  svg.addEventListener("pointerleave", hide);
+}
+
+// ---------------------------------------------------------------------
+// Stacked bar chart. segments = [{key,label,color}]; points = [{label, values:{key:v}}]
+// ---------------------------------------------------------------------
+function StackedBarChart(host, points, segments, opts = {}) {
+  const w = 480, h = 130, padL = 34, padR = 8, padT = 8, padB = 18;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+  host.innerHTML = "";
+  host.appendChild(svg);
+
+  const totals = points.map(p => segments.reduce((sum, s) => sum + (p.values[s.key] || 0), 0));
+  const max = opts.max || Math.max(...totals, 1);
+  const n = points.length;
+  const bw = (w - padL - padR) / n;
+  const barW = Math.max(1, bw * 0.62);
+
+  for (let g = 0; g <= 2; g++) {
+    const gv = (max * g) / 2;
+    const gy = h - padB - (gv / max) * (h - padT - padB);
+    const line = document.createElementNS(svg.namespaceURI, "line");
+    line.setAttribute("x1", padL); line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", gy); line.setAttribute("y2", gy);
+    line.setAttribute("class", "grid-line");
+    svg.appendChild(line);
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", 2); label.setAttribute("y", gy + 3);
+    label.setAttribute("class", "axis-label");
+    label.textContent = Math.round(gv);
+    svg.appendChild(label);
+  }
+  [0, Math.floor((n - 1) / 2), n - 1].forEach(i => {
+    if (i < 0 || i >= n) return;
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", padL + i * bw + bw / 2); label.setAttribute("y", h - 4);
+    label.setAttribute("class", "axis-label");
+    label.setAttribute("text-anchor", "middle");
+    label.textContent = fmtDate(points[i].label);
+    svg.appendChild(label);
+  });
+
+  points.forEach((p, i) => {
+    let yCursor = h - padB;
+    const x = padL + i * bw + (bw - barW) / 2;
+    segments.forEach(seg => {
+      const v = p.values[seg.key] || 0;
+      if (v <= 0) return;
+      const segH = (v / max) * (h - padT - padB);
+      const rect = document.createElementNS(svg.namespaceURI, "rect");
+      rect.setAttribute("x", x);
+      rect.setAttribute("y", yCursor - segH);
+      rect.setAttribute("width", barW);
+      rect.setAttribute("height", Math.max(0, segH - 1));
+      rect.setAttribute("fill", seg.color);
+      rect.setAttribute("rx", "1.5");
+      svg.appendChild(rect);
+      yCursor -= segH;
+    });
+    const hit = document.createElementNS(svg.namespaceURI, "rect");
+    hit.setAttribute("x", padL + i * bw);
+    hit.setAttribute("y", padT);
+    hit.setAttribute("width", bw);
+    hit.setAttribute("height", h - padT - padB);
+    hit.setAttribute("fill", "transparent");
+    svg.appendChild(hit);
+
+    hit.addEventListener("pointerenter", () => {
+      let rows = "";
+      segments.forEach(seg => {
+        const v = p.values[seg.key];
+        if (v) rows += `<div class="t-row"><span class="t-key" style="background:${seg.color}"></span><span class="t-name">${seg.label}</span>&nbsp;<span class="t-val">${v}${opts.unit || ""}</span></div>`;
+      });
+      tooltipEl.innerHTML = `<div class="t-date">${fmtDate(p.label, { day: "2-digit", month: "long", year: "numeric" })}</div>${rows}`;
+      tooltipEl.style.opacity = 1;
+      const r = hit.getBoundingClientRect();
+      tooltipEl.style.left = `${r.left + window.scrollX + r.width / 2}px`;
+      tooltipEl.style.top = `${r.top + window.scrollY - 8}px`;
+      tooltipEl.style.transform = "translate(-50%, -100%)";
+    });
+    hit.addEventListener("pointerleave", () => { tooltipEl.style.opacity = 0; });
+  });
+
+  if (!totals.some(t => t > 0)) host.innerHTML = '<div class="empty">Nessun dato in questo periodo</div>';
+}
+
+// ---------------------------------------------------------------------
+// Range area chart (min-max band), e.g. body battery
+// ---------------------------------------------------------------------
+function RangeChart(host, points, opts = {}) {
+  const w = 480, h = 130, padL = 30, padR = 8, padT = 8, padB = 18;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+  host.innerHTML = "";
+  host.appendChild(svg);
+
+  const vals = points.flatMap(p => [p.lo, p.hi]).filter(v => v !== null && v !== undefined);
+  if (!vals.length) { host.innerHTML = '<div class="empty">Nessun dato in questo periodo</div>'; return; }
+  const min = opts.min !== undefined ? opts.min : Math.min(...vals);
+  const max = opts.max !== undefined ? opts.max : Math.max(...vals);
+  const range = (max - min) || 1;
+  const n = points.length;
+  const stepX = n > 1 ? (w - padL - padR) / (n - 1) : 0;
+  const xAt = i => padL + i * stepX;
+  const yAt = v => h - padB - ((v - min) / range) * (h - padT - padB);
+
+  for (let g = 0; g <= 2; g++) {
+    const gv = min + (range * g) / 2;
+    const gy = yAt(gv);
+    const line = document.createElementNS(svg.namespaceURI, "line");
+    line.setAttribute("x1", padL); line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", gy); line.setAttribute("y2", gy);
+    line.setAttribute("class", "grid-line");
+    svg.appendChild(line);
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", 2); label.setAttribute("y", gy + 3);
+    label.setAttribute("class", "axis-label");
+    label.textContent = Math.round(gv);
+    svg.appendChild(label);
+  }
+
+  let top = "", bottom = "";
+  points.forEach((p, i) => {
+    if (p.hi === null || p.hi === undefined) return;
+    top += `${top === "" ? "M" : "L"}${xAt(i)},${yAt(p.hi)} `;
+  });
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
+    if (p.lo === null || p.lo === undefined) continue;
+    bottom += `L${xAt(i)},${yAt(p.lo)} `;
+  }
+  const area = document.createElementNS(svg.namespaceURI, "path");
+  area.setAttribute("d", top + bottom + "Z");
+  area.setAttribute("fill", "var(--s1)");
+  area.setAttribute("opacity", "0.18");
+  svg.appendChild(area);
+
+  const topLine = document.createElementNS(svg.namespaceURI, "path");
+  topLine.setAttribute("d", top);
+  topLine.setAttribute("fill", "none");
+  topLine.setAttribute("stroke", "var(--s1)");
+  topLine.setAttribute("stroke-width", "2");
+  svg.appendChild(topLine);
+
+  [0, Math.floor((n - 1) / 2), n - 1].forEach(i => {
+    if (i < 0 || i >= n) return;
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", xAt(i)); label.setAttribute("y", h - 4);
+    label.setAttribute("class", "axis-label");
+    label.setAttribute("text-anchor", i === 0 ? "start" : i === n - 1 ? "end" : "middle");
+    label.textContent = fmtDate(points[i].label);
+    svg.appendChild(label);
+  });
+
+  const cross = document.createElementNS(svg.namespaceURI, "line");
+  cross.setAttribute("y1", padT); cross.setAttribute("y2", h - padB);
+  cross.setAttribute("stroke", "var(--baseline)");
+  cross.style.opacity = 0;
+  svg.appendChild(cross);
+
+  svg.addEventListener("pointermove", e => {
+    const rect = svg.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const frac = (relX / rect.width) * (w - padL - padR);
+    let idx = Math.round(frac / (stepX || 1));
+    idx = Math.max(0, Math.min(n - 1, idx));
+    const p = points[idx];
+    const cx = xAt(idx);
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx);
+    cross.style.opacity = 1;
+    tooltipEl.innerHTML = `<div class="t-date">${fmtDate(p.label, { day: "2-digit", month: "long", year: "numeric" })}</div>
+      <div class="t-row"><span class="t-key" style="background:var(--s1)"></span><span class="t-name">Min → Max</span>&nbsp;<span class="t-val">${p.lo ?? "—"} → ${p.hi ?? "—"}</span></div>`;
+    tooltipEl.style.opacity = 1;
+    tooltipEl.style.left = `${rect.left + window.scrollX + relX}px`;
+    tooltipEl.style.top = `${rect.top + window.scrollY - 8}px`;
+    tooltipEl.style.transform = "translate(-50%, -100%)";
+  });
+  svg.addEventListener("pointerleave", () => { cross.style.opacity = 0; tooltipEl.style.opacity = 0; });
+}
+
+// ---------------------------------------------------------------------
+// Stat cards
+// ---------------------------------------------------------------------
+const CARD_DEFS = [
+  { key: "resting_hr", label: "Rest HR", unit: "bpm", good: "down" },
+  { key: "hrv_ms", label: "HRV", unit: "ms", good: "up" },
+  { key: "sleep_hours", label: "Sonno", unit: "h", good: "up" },
+  { key: "training_readiness", label: "Readiness", unit: "", good: "up" },
+  { key: "stress_avg", label: "Stress", unit: "", good: "down" },
+  { key: "steps", label: "Passi", unit: "", good: "up" },
+  { key: "spo2_avg", label: "SpO2", unit: "%", good: "up" },
+  { key: "calories_total", label: "Calorie", unit: "kcal", good: null },
+];
 
 function renderCards(today, yesterday) {
   const container = document.getElementById("today-cards");
   if (!today) {
-    container.innerHTML = '<div class="empty">Nessun dato di oggi ancora. Attendi la prossima sincronizzazione.</div>';
+    container.innerHTML = '<div class="empty">Nessun dato ancora per oggi. Attendi la prossima sincronizzazione.</div>';
     return;
   }
-  const fields = [
-    ["Rest HR", today.resting_hr, "bpm"],
-    ["HRV", today.hrv_ms, "ms"],
-    ["Sonno", today.sleep_hours, "h"],
-    ["Body battery", today.body_battery_low != null && today.body_battery_high != null ? `${today.body_battery_low}→${today.body_battery_high}` : null, ""],
-    ["Stress", today.stress_avg, ""],
-    ["Passi", today.steps, ""],
-    ["Readiness", today.training_readiness, ""],
-  ];
-  container.innerHTML = fields.map(([label, value, unit]) => `
-    <div class="card">
-      <div class="label">${label}</div>
-      <div class="value">${value === null || value === undefined ? "—" : value}<span class="unit">${unit}</span></div>
-    </div>
-  `).join("");
+  container.innerHTML = CARD_DEFS.map(def => {
+    const v = today[def.key];
+    let deltaHtml = "";
+    if (yesterday && v !== null && v !== undefined && yesterday[def.key] !== null && yesterday[def.key] !== undefined) {
+      const diff = v - yesterday[def.key];
+      if (Math.abs(diff) > 0.05) {
+        const arrow = diff > 0 ? "↑" : "↓";
+        const dir = diff > 0 ? "up" : "down";
+        const isGood = def.good && dir === def.good;
+        deltaHtml = `<div class="delta ${isGood ? "good" : ""}">${arrow} ${Math.abs(num(diff, 1))} vs ieri</div>`;
+      } else {
+        deltaHtml = `<div class="delta">= vs ieri</div>`;
+      }
+    }
+    return `<div class="card">
+      <div class="label">${def.label}</div>
+      <div class="value">${v === null || v === undefined ? "—" : num(v, def.key === "hrv_ms" || def.key === "sleep_hours" ? 1 : 0)}<span class="unit">${def.unit}</span></div>
+      ${deltaHtml}
+    </div>`;
+  }).join("");
 }
 
-function drawLineChart(svgId, points, opts = {}) {
-  const svg = document.getElementById(svgId);
-  const values = points.map(p => p.v).filter(v => v !== null && v !== undefined);
-  if (values.length === 0) {
-    svg.innerHTML = '<text x="10" y="60" font-size="12" fill="currentColor" opacity="0.5">Nessun dato</text>';
-    return;
+// ---------------------------------------------------------------------
+// Table rendering + sorting
+// ---------------------------------------------------------------------
+function renderTable(container, rows, columns) {
+  let sortKey = null, sortDir = 1;
+
+  function draw() {
+    let sorted = [...rows];
+    if (sortKey) {
+      sorted.sort((a, b) => {
+        const av = a[sortKey], bv = b[sortKey];
+        if (av === null || av === undefined) return 1;
+        if (bv === null || bv === undefined) return -1;
+        return av > bv ? sortDir : av < bv ? -sortDir : 0;
+      });
+    }
+    const head = columns.map(c => `<th data-key="${c.key}">${c.label}</th>`).join("");
+    const body = sorted.map(r => `<tr>${columns.map(c => `<td>${c.fmt ? c.fmt(r[c.key], r) : (r[c.key] ?? "—")}</td>`).join("")}</tr>`).join("");
+    container.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+    container.querySelectorAll("th").forEach(th => {
+      th.addEventListener("click", () => {
+        const key = th.dataset.key;
+        sortDir = sortKey === key ? -sortDir : 1;
+        sortKey = key;
+        draw();
+      });
+    });
   }
-  const w = 600, h = 120, pad = 10;
-  const min = opts.min !== undefined ? opts.min : Math.min(...values);
-  const max = opts.max !== undefined ? opts.max : Math.max(...values);
-  const range = max - min || 1;
-  const stepX = (w - pad * 2) / Math.max(points.length - 1, 1);
-
-  const coords = points.map((p, i) => {
-    const x = pad + i * stepX;
-    const y = p.v === null || p.v === undefined
-      ? null
-      : h - pad - ((p.v - min) / range) * (h - pad * 2);
-    return { x, y, v: p.v, label: p.label };
-  });
-
-  const segments = [];
-  let path = "";
-  coords.forEach((c, i) => {
-    if (c.y === null) { path = ""; return; }
-    path += (path === "" ? `M${c.x},${c.y}` : ` L${c.x},${c.y}`);
-    if (i === coords.length - 1 || coords[i + 1].y === null) segments.push(path);
-  });
-
-  const dots = coords.filter(c => c.y !== null).map(c =>
-    `<circle cx="${c.x}" cy="${c.y}" r="2.5" fill="var(--accent)"><title>${c.label}: ${c.v}</title></circle>`
-  ).join("");
-
-  svg.innerHTML = segments.map(seg =>
-    `<path d="${seg}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
-  ).join("") + dots;
+  draw();
 }
+
+// ---------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------
+let allActivities = [];
+
+function buildFilters() {
+  const el = document.getElementById("filters");
+  el.innerHTML = RANGES.map(r => `<button data-days="${r.days}" class="${r.days === currentDays ? "active" : ""}">${r.label}</button>`).join("");
+  el.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentDays = Number(btn.dataset.days);
+      el.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      loadAndRender();
+    });
+  });
+}
+
+document.querySelectorAll(".toggle-table").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = document.getElementById(btn.dataset.target);
+    target.classList.toggle("open");
+    btn.textContent = target.classList.contains("open") ? "nascondi tabella" : "mostra tabella";
+  });
+});
 
 function renderActivities(activities) {
   const container = document.getElementById("activities");
   if (!activities.length) {
-    container.innerHTML = '<div class="empty">Nessuna attività recente.</div>';
+    container.innerHTML = '<div class="empty">Nessuna attività in questo periodo.</div>';
     return;
   }
   container.innerHTML = activities.map(a => {
-    const date = a.start_time ? new Date(a.start_time).toLocaleDateString("it-IT", { day: "2-digit", month: "short" }) : "";
+    const date = fmtDate(a.start_time, { day: "2-digit", month: "short" });
     const dist = a.distance_m ? `${(a.distance_m / 1000).toFixed(2)} km` : "";
     const dur = a.duration_s ? `${Math.round(a.duration_s / 60)} min` : "";
     const hr = a.avg_hr ? `${a.avg_hr} bpm avg` : "";
     const meta = [dist, dur, hr].filter(Boolean).join(" · ");
-    return `
-      <div class="activity-row">
-        <div>
-          <div class="name">${a.name || a.activity_type || "Attività"}</div>
-          <div class="meta">${meta}</div>
-        </div>
-        <div class="meta">${date}</div>
+    return `<div class="activity-card">
+      <div>
+        <div class="name"></div>
+        <div class="meta">${meta}${a.location_name ? " · " + a.location_name : ""}</div>
+        ${a.training_effect_label ? `<span class="badge">${a.training_effect_label}</span>` : ""}
       </div>
-    `;
+      <div class="date">${date}</div>
+    </div>`;
   }).join("");
+  // set names via textContent (untrusted user-entered activity names)
+  container.querySelectorAll(".activity-card").forEach((card, i) => {
+    card.querySelector(".name").textContent = activities[i].name || activities[i].activity_type || "Attività";
+  });
+
+  const typeFilter = document.getElementById("activity-type-filter");
+  const types = [...new Set(allActivities.map(a => a.activity_type).filter(Boolean))].sort();
+  if (typeFilter.options.length <= 1) {
+    types.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t; opt.textContent = t;
+      typeFilter.appendChild(opt);
+    });
+  }
 }
 
-async function main() {
+function applyActivityFilters() {
+  const q = document.getElementById("activity-search").value.toLowerCase();
+  const type = document.getElementById("activity-type-filter").value;
+  const filtered = allActivities.filter(a => {
+    const matchesQ = !q || (a.name || "").toLowerCase().includes(q) || (a.location_name || "").toLowerCase().includes(q);
+    const matchesType = !type || a.activity_type === type;
+    return matchesQ && matchesType;
+  });
+  renderActivities(filtered);
+}
+
+document.getElementById("activity-search").addEventListener("input", applyActivityFilters);
+document.getElementById("activity-type-filter").addEventListener("change", applyActivityFilters);
+
+async function loadAndRender() {
   const subtitle = document.getElementById("subtitle");
   try {
-    const [wellness, activities] = await Promise.all([
-      sb("garmin_wellness?select=*&order=date.desc&limit=14"),
-      sb("garmin_activities?select=*&order=start_time.desc&limit=8"),
+    const [wellnessDesc, activities] = await Promise.all([
+      sb(`garmin_wellness?select=*&order=date.desc&limit=${currentDays}`),
+      sb(`garmin_activities?select=*&order=start_time.desc&limit=${Math.min(currentDays * 2, 500)}`),
     ]);
 
-    const sorted = [...wellness].sort((a, b) => a.date.localeCompare(b.date));
-    const today = wellness[0] || null;
-    const yesterday = wellness[1] || null;
+    const wellness = [...wellnessDesc].sort((a, b) => a.date.localeCompare(b.date));
+    const today = wellnessDesc[0] || null;
+    const yesterday = wellnessDesc[1] || null;
 
     subtitle.textContent = today
-      ? `Aggiornato al ${new Date(today.date).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" })}`
+      ? `Aggiornato al ${fmtDate(today.date, { day: "2-digit", month: "long", year: "numeric" })} · ${wellness.length} giorni nel periodo`
       : "In attesa dei primi dati";
 
     renderCards(today, yesterday);
 
-    drawLineChart("chart-rhr", sorted.map(d => ({ v: d.resting_hr, label: d.date })));
-    drawLineChart("chart-hrv", sorted.map(d => ({ v: d.hrv_ms, label: d.date })));
-    drawLineChart("chart-sleep", sorted.map(d => ({ v: d.sleep_hours, label: d.date })), { min: 0 });
-    drawLineChart("chart-tr", sorted.map(d => ({ v: d.training_readiness, label: d.date })), { min: 0, max: 100 });
+    const L = (key) => wellness.map(d => ({ label: d.date, v: d[key] }));
 
-    renderActivities(activities);
+    LineChart(document.getElementById("c-rhr"), [{ key: "resting_hr", label: "Rest HR", color: "var(--s1)", points: L("resting_hr") }], { unit: " bpm" });
+    LineChart(document.getElementById("c-hrv"), [{ key: "hrv_ms", label: "HRV", color: "var(--s3)", points: L("hrv_ms") }], { unit: " ms" });
+    LineChart(document.getElementById("c-tr"), [{ key: "tr", label: "Readiness", color: "var(--s6)", points: L("training_readiness") }], { min: 0, max: 100 });
+    RangeChart(document.getElementById("c-bb"), wellness.map(d => ({ label: d.date, lo: d.body_battery_low, hi: d.body_battery_high })), { min: 0, max: 100 });
+
+    LineChart(document.getElementById("c-sleepscore"), [{ key: "ss", label: "Punteggio", color: "var(--s7)", points: L("sleep_score") }], { min: 0, max: 100 });
+    StackedBarChart(document.getElementById("c-sleep"), wellness.map(d => ({
+      label: d.date,
+      values: { deep: d.sleep_deep_min, light: d.sleep_light_min, rem: d.sleep_rem_min, awake: d.sleep_awake_min },
+    })), [
+      { key: "deep", label: "Profondo", color: "var(--s7)" },
+      { key: "light", label: "Leggero", color: "var(--s1)" },
+      { key: "rem", label: "REM", color: "var(--s3)" },
+      { key: "awake", label: "Sveglio", color: "var(--muted)" },
+    ], { unit: " min" });
+
+    LineChart(document.getElementById("c-stress"), [{ key: "stress", label: "Stress", color: "var(--s2)", points: L("stress_avg") }], { min: 0, max: 100 });
+    StackedBarChart(document.getElementById("c-stressmin"), wellness.map(d => ({
+      label: d.date,
+      values: { low: d.stress_low_min, high: d.stress_high_min },
+    })), [
+      { key: "low", label: "Basso", color: "var(--s3)" },
+      { key: "high", label: "Alto", color: "var(--s4)" },
+    ], { unit: " min" });
+
+    StackedBarChart(document.getElementById("c-steps"), wellness.map(d => ({ label: d.date, values: { steps: d.steps } })), [
+      { key: "steps", label: "Passi", color: "var(--s1)" },
+    ]);
+    StackedBarChart(document.getElementById("c-cal"), wellness.map(d => ({
+      label: d.date,
+      values: { active: d.calories_active, rest: d.calories_active != null && d.calories_total != null ? d.calories_total - d.calories_active : null },
+    })), [
+      { key: "active", label: "Attive", color: "var(--s2)" },
+      { key: "rest", label: "Base", color: "var(--muted)" },
+    ], { unit: " kcal" });
+
+    LineChart(document.getElementById("c-spo2"), [{ key: "spo2", label: "SpO2", color: "var(--s3)", points: L("spo2_avg") }], { min: 85, max: 100, unit: "%" });
+    LineChart(document.getElementById("c-resp"), [{ key: "resp", label: "Respirazione", color: "var(--s5)", points: L("respiration_avg") }], { unit: " brpm" });
+
+    renderTable(document.getElementById("table-sleep"), [...wellnessDesc], [
+      { key: "date", label: "Data" },
+      { key: "sleep_hours", label: "Ore" },
+      { key: "sleep_score", label: "Punteggio" },
+      { key: "sleep_deep_min", label: "Profondo (min)" },
+      { key: "sleep_light_min", label: "Leggero (min)" },
+      { key: "sleep_rem_min", label: "REM (min)" },
+      { key: "sleep_awake_min", label: "Sveglio (min)" },
+      { key: "sleep_avg_hr", label: "HR medio" },
+    ]);
+    renderTable(document.getElementById("table-stress"), [...wellnessDesc], [
+      { key: "date", label: "Data" },
+      { key: "stress_avg", label: "Stress" },
+      { key: "stress_low_min", label: "Min. basso" },
+      { key: "stress_high_min", label: "Min. alto" },
+      { key: "steps", label: "Passi" },
+      { key: "calories_total", label: "Calorie" },
+      { key: "spo2_avg", label: "SpO2" },
+      { key: "respiration_avg", label: "Respirazione" },
+    ]);
+
+    allActivities = activities;
+    applyActivityFilters();
+    renderTable(document.getElementById("table-activities"), activities, [
+      { key: "start_time", label: "Data", fmt: v => fmtDate(v) },
+      { key: "name", label: "Nome" },
+      { key: "activity_type", label: "Tipo" },
+      { key: "distance_m", label: "Distanza (km)", fmt: v => v ? (v / 1000).toFixed(2) : "—" },
+      { key: "duration_s", label: "Durata (min)", fmt: v => v ? Math.round(v / 60) : "—" },
+      { key: "avg_hr", label: "HR medio" },
+      { key: "max_hr", label: "HR max" },
+      { key: "calories", label: "Calorie" },
+      { key: "training_load", label: "Carico" },
+      { key: "training_effect_label", label: "Effetto" },
+    ]);
   } catch (err) {
     subtitle.innerHTML = `<span class="error">Errore nel caricamento dei dati: ${err.message}</span>`;
   }
 }
 
-main();
+buildFilters();
+loadAndRender();
+window.addEventListener("resize", () => {}); // charts are viewBox-scaled, no redraw needed
 </script>
 </body>
 </html>
